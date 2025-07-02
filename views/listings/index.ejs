@@ -1,0 +1,112 @@
+<% layout("/layouts/boilerplate") %>
+
+<head>
+  <link rel="stylesheet" href="/css/indexPage.css">
+</head>
+
+<body>
+  <!-- Enhanced Filter Bar -->
+  <div id="filters">
+    <div class="filter-container">
+      <a href="/listings/category/Trending" class="filter">
+        <div><i class="fa-solid fa-fire"></i></div>   
+        <p>Trending</p>
+      </a>
+
+      <a href="/listings/category/Rooms" class="filter">
+        <div><i class="fa-solid fa-person-shelter"></i></div>   
+        <p>Rooms</p>
+      </a>
+
+      <a href="/listings/category/Iconic Cities" class="filter">
+        <div><i class="fa-solid fa-mountain-city"></i></div>   
+        <p>Iconic Cities</p>
+      </a>
+
+      <a href="/listings/category/Hill Stations" class="filter">
+        <div><i class="fa-solid fa-mountain"></i></div>   
+        <p>Hill Stations</p>
+      </a>
+
+      <a href="/listings/category/Luxury Castles" class="filter">
+        <div><i class="fa-brands fa-fort-awesome"></i></div>   
+        <p>Luxury Castles</p>
+      </a>
+
+      <a href="/listings/category/Amazing Pools" class="filter">
+        <div><i class="fa-solid fa-water-ladder"></i></div>   
+        <p>Amazing Pools</p>
+      </a>
+
+      <a href="/listings/category/Farms" class="filter">
+        <div><i class="fa-solid fa-tractor"></i></div>   
+        <p>Farms</p>
+      </a>
+
+      <a href="/listings/category/Campsites" class="filter">
+        <div><i class="fa-solid fa-tents"></i></div>   
+        <p>Campsites</p>
+      </a>
+
+      <a href="/listings/category/Arctic" class="filter">
+        <div><i class="fa-solid fa-snowflake"></i></div>   
+        <p>Arctic</p>
+      </a>
+
+      <a href="/listings/category/Beaches" class="filter">
+        <div><i class="fa-solid fa-umbrella-beach"></i></div>   
+        <p>Beaches</p>
+      </a>
+    </div>
+    
+    <div class="tax-toggle">
+      <span class="toggle-text">Display total after taxes</span>
+      <label class="switch">
+        <input type="checkbox" id="taxToggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Discover Amazing Places</h1>
+      <p class="page-subtitle">Find your perfect getaway from our curated collection of properties</p>
+    </div>
+
+    <!-- Enhanced Listings Grid -->
+    <div class="listings-grid">
+      <div class="row row-cols-lg-3 row-cols-md-2 row-cols-1 g-4">
+        <% for(let listing of allListings) { %>
+          <div class="col">
+            <div class="listing-card">
+              <a href="/listings/<%= listing._id %>" class="text-decoration-none">
+                <div class="position-relative">
+                  <img src="<%= listing.image.url %>" class="listing-image w-100" alt="<%= listing.title %>">
+                  <div class="image-overlay"></div>
+                  <div class="listing-badge">
+                    <i class="fa-solid fa-heart me-1"></i>Popular
+                  </div>
+                </div>
+                <div class="listing-body">
+                  <h5 class="listing-title"><%= listing.title %></h5>
+                  <div class="listing-price-container">
+                    <div>
+                      <span class="listing-price">₹<%= listing.price ? listing.price.toLocaleString("en-IN") : "N/A" %></span>
+                      <span class="price-label">/ night</span>
+                      <span class="tax-info">+18% GST</span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/indexPage.js"></script>
+</body>

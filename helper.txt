@@ -1,0 +1,7 @@
+| Location                  | What to Update                  |
+| ------------------------- | ------------------------------- |
+| `models/listing.js`       | Mongoose enum for `category`    |
+| `views/.../index.ejs`     | UI filter links & icons         |
+| `data.js` (optional)      | Listings’ `category` values     |
+| New/Edit Listing Forms    | Category `<select>` options     |
+| Joi Schema (optional)     | Category validation             |

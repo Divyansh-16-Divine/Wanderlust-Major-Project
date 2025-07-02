@@ -1,0 +1,323 @@
+<nav class="navbar navbar-expand-md bg-body-light border-bottom sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/listings"><i class="fa-regular fa-compass"></i></a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-link" href="/listings">Explore</a>
+      </div>
+      
+      <div class="navbar-search">
+        <form class="search-form" role="search" action="/listings/search" method="GET">
+          <div class="search-container">
+            <input class="search-input" type="search" name="q" placeholder="Search destinations, properties..." aria-label="Search"/>
+            <button class="search-btn" type="submit">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link host-link" href="/listings/new">
+          <i class="fa-solid fa-plus"></i>
+          Airbnb your home
+        </a>
+        <% if (typeof currentUser === 'undefined' || !currentUser) { %>
+          <a class="nav-link auth-link signup" href="/signup">Sign Up</a>
+          <a class="nav-link auth-link login" href="/login">Log In</a>
+        <% } else { %>
+          <a class="nav-link auth-link logout" href="/logout" onclick="return confirm('Are you sure you want to log out?');">Log Out</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<style>
+/* Professional Navbar Styling */
+.navbar {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(10px);
+  padding: 1rem 0;
+  z-index: 1090;
+}
+
+/* Brand Styling */
+.navbar-brand {
+  font-size: 2rem;
+  color: #fe424d !important;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(254, 66, 77, 0.1) 0%, rgba(255, 87, 99, 0.1) 100%);
+}
+
+.navbar-brand:hover {
+  color: #ff5763 !important;
+  transform: scale(1.05);
+  background: linear-gradient(135deg, rgba(254, 66, 77, 0.15) 0%, rgba(255, 87, 99, 0.15) 100%);
+}
+
+/* Navigation Links */
+.nav-link {
+  color: #475569 !important;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0 0.25rem;
+  position: relative;
+}
+
+.nav-link:hover {
+  color: #fe424d !important;
+  background-color: rgba(254, 66, 77, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Search Container */
+.navbar-search {
+  flex: 1;
+  max-width: 400px;
+  margin: 0 2rem;
+}
+
+.search-form {
+  width: 100%;
+}
+
+.search-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 50px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.search-container:hover {
+  border-color: #fe424d;
+  box-shadow: 0 4px 12px rgba(254, 66, 77, 0.15);
+}
+
+.search-container:focus-within {
+  border-color: #fe424d;
+  box-shadow: 0 0 0 3px rgba(254, 66, 77, 0.1);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  background: transparent;
+  color: #374151;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.search-btn {
+  background: linear-gradient(135deg, #fe424d 0%, #ff5763 100%);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  min-width: 50px;
+}
+
+.search-btn:hover {
+  background: linear-gradient(135deg, #e73c47 0%, #ff4757 100%);
+  transform: scale(1.05);
+}
+
+.search-btn:active {
+  transform: scale(0.98);
+}
+
+/* Host Link Styling */
+.host-link {
+  background: linear-gradient(135deg, rgba(254, 66, 77, 0.1) 0%, rgba(255, 87, 99, 0.1) 100%);
+  border-radius: 12px;
+  font-weight: 600 !important;
+  color: #fe424d !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.host-link:hover {
+  background: linear-gradient(135deg, rgba(254, 66, 77, 0.15) 0%, rgba(255, 87, 99, 0.15) 100%);
+  color: #e73c47 !important;
+}
+
+/* Auth Links */
+.auth-link {
+  font-weight: 600 !important;
+  border-radius: 8px;
+}
+
+.signup {
+  background: linear-gradient(135deg, #fe424d 0%, #ff5763 100%);
+  color: white !important;
+  border-radius: 12px;
+}
+
+.signup:hover {
+  background: linear-gradient(135deg, #e73c47 0%, #ff4757 100%);
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(254, 66, 77, 0.3);
+}
+
+.login {
+  border: 2px solid #fe424d;
+  color: #fe424d !important;
+  border-radius: 12px;
+}
+
+.login:hover {
+  background: #fe424d;
+  color: white !important;
+}
+
+.logout {
+  border: 2px solid #dc2626;
+  color: #dc2626 !important;
+  border-radius: 12px;
+}
+
+.logout:hover {
+  background: #dc2626;
+  color: white !important;
+}
+
+/* Navbar Toggler */
+.navbar-toggler {
+  border: none;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(254, 66, 77, 0.1);
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(254, 66, 77, 0.25);
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28254, 66, 77, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar-search {
+    margin: 1rem 0;
+    max-width: 100%;
+    order: 3;
+    width: 100%;
+  }
+
+  .navbar-nav {
+    text-align: center;
+  }
+
+  .nav-link {
+    margin: 0.25rem 0;
+  }
+
+  .search-container {
+    border-radius: 12px;
+  }
+
+  .search-btn {
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+
+  .host-link {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar {
+    padding: 0.75rem 0;
+  }
+
+  .navbar-brand {
+    font-size: 1.75rem;
+  }
+
+  .search-input {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .search-btn {
+    padding: 0.6rem 1rem;
+    min-width: 45px;
+  }
+
+  .nav-link {
+    padding: 0.6rem 1rem !important;
+    font-size: 0.9rem;
+  }
+}
+
+/* Animation for smooth transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-collapse.show {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Active state for current page */
+.nav-link.active {
+  color: #fe424d !important;
+  background-color: rgba(254, 66, 77, 0.1);
+  font-weight: 600;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: linear-gradient(135deg, #fe424d 0%, #ff5763 100%);
+  border-radius: 1px;
+}
+</style>
+
+<script src="/js/navbar.js"></script>

@@ -1,0 +1,558 @@
+<% layout("/layouts/boilerplate") %>
+
+<style>
+/* Compact Search Results Page Styling */
+.search-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem 0;
+  margin-bottom: 1.5rem;
+}
+
+.search-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.search-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.search-title-section {
+  flex: 1;
+}
+
+.search-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 0.25rem 0;
+  background: linear-gradient(135deg, #fe424d 0%, #ff5763 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.search-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.search-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(254, 66, 77, 0.1);
+  padding: 0.4rem 0.8rem;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.stat-number {
+  color: #fe424d;
+  font-weight: 600;
+}
+
+.new-search-container {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  margin-top: 0.75rem;
+}
+
+.new-search-form {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.new-search-input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.new-search-input:focus {
+  outline: none;
+  border-color: #fe424d;
+  box-shadow: 0 0 0 2px rgba(254, 66, 77, 0.1);
+}
+
+.new-search-btn {
+  background: linear-gradient(135deg, #fe424d 0%, #ff5763 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.new-search-btn:hover {
+  background: linear-gradient(135deg, #e73c47 0%, #ff4757 100%);
+  transform: translateY(-1px);
+}
+
+.filters-bar {
+  max-width: 1200px;
+  margin: 0 auto 1.5rem;
+  padding: 0 1.5rem;
+}
+
+.filters-container {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  background: white;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.filter-select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #fe424d;
+}
+
+.results-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.listing-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 1px solid #f1f5f9;
+  height: 100%;
+}
+
+.listing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.listing-image {
+  height: 14rem;
+  object-fit: cover;
+}
+
+.listing-body {
+  padding: 1rem;
+}
+
+.listing-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 0.4rem;
+  line-height: 1.3;
+}
+
+.listing-location {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.listing-price {
+  font-size: 0.95rem;
+  color: #fe424d;
+  font-weight: 600;
+}
+
+.price-label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.highlight {
+  background: linear-gradient(135deg, rgba(254, 66, 77, 0.2) 0%, rgba(255, 87, 99, 0.2) 100%);
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.no-results {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+}
+
+.no-results-icon {
+  font-size: 3rem;
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.no-results-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.75rem;
+}
+
+.no-results-text {
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.suggestions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.suggestion-tag {
+  background: rgba(254, 66, 77, 0.1);
+  color: #fe424d;
+  padding: 0.4rem 0.8rem;
+  border-radius: 16px;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.suggestion-tag:hover {
+  background: rgba(254, 66, 77, 0.15);
+  color: #e73c47;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .search-header {
+    padding: 1rem 0;
+  }
+  
+  .search-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .search-title {
+    font-size: 1.25rem;
+  }
+  
+  .search-stats {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .new-search-form {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  
+  .new-search-input,
+  .new-search-btn {
+    width: 100%;
+  }
+  
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .filter-group {
+    justify-content: space-between;
+  }
+  
+  .filter-select {
+    min-width: auto;
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-header-content,
+  .results-container,
+  .filters-bar {
+    padding: 0 1rem;
+  }
+  
+  .new-search-container {
+    padding: 0.75rem;
+  }
+  
+  .stat-badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+  
+  .listing-image {
+    height: 12rem;
+  }
+  
+  .suggestions {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+}
+
+/* Compact spacing adjustments */
+.row.g-4 {
+  --bs-gutter-x: 1rem;
+  --bs-gutter-y: 1rem;
+}
+
+@media (min-width: 992px) {
+  .row.g-4 {
+    --bs-gutter-x: 1.5rem;
+    --bs-gutter-y: 1.5rem;
+  }
+}
+</style>
+
+<!-- Compact Search Header -->
+<div class="search-header">
+  <div class="search-header-content">
+    <div class="search-top-row">
+      <div class="search-title-section">
+        <h1 class="search-title">Search Results</h1>
+        <p class="search-subtitle">
+          <% if (searchQuery) { %>
+            Results for "<strong><%= searchQuery %></strong>"
+          <% } else { %>
+            Browse all properties
+          <% } %>
+        </p>
+      </div>
+      
+      <div class="search-stats">
+        <div class="stat-badge">
+          <i class="fa-solid fa-search"></i>
+          <span class="stat-number"><%= results.length %></span>
+          <span><%= results.length === 1 ? 'result' : 'results' %></span>
+        </div>
+        
+        <% if (searchQuery) { %>
+          <div class="stat-badge">
+            <i class="fa-solid fa-clock"></i>
+            <span>Completed</span>
+          </div>
+        <% } %>
+      </div>
+    </div>
+    
+    <!-- Compact New Search -->
+    <div class="new-search-container">
+      <form class="new-search-form" action="/listings/search" method="GET">
+        <input 
+          type="text" 
+          name="q" 
+          class="new-search-input" 
+          placeholder="Refine your search..." 
+          value="<%= searchQuery || '' %>"
+        >
+        <button type="submit" class="new-search-btn">
+          <i class="fa-solid fa-search"></i>
+          Search
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Compact Filters Bar -->
+<div class="filters-bar">
+  <div class="filters-container">
+    <div class="filter-group">
+      <label class="filter-label">Sort:</label>
+      <select class="filter-select" id="sortFilter">
+        <option value="relevance" <%= (filters && filters.sort === 'relevance') ? 'selected' : '' %>>Relevance</option>
+        <option value="price-low" <%= (filters && filters.sort === 'price-low') ? 'selected' : '' %>>Price: Low to High</option>
+        <option value="price-high" <%= (filters && filters.sort === 'price-high') ? 'selected' : '' %>>Price: High to Low</option>
+        <option value="newest" <%= (filters && filters.sort === 'newest') ? 'selected' : '' %>>Newest</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label class="filter-label">Category:</label>
+      <select class="filter-select" id="categoryFilter">
+        <option value="">All Categories</option>
+        <option value="Trending" <%= (filters && filters.category === 'Trending') ? 'selected' : '' %>>Trending</option>
+        <option value="Rooms" <%= (filters && filters.category === 'Rooms') ? 'selected' : '' %>>Rooms</option>
+        <option value="Iconic Cities" <%= (filters && filters.category === 'Iconic Cities') ? 'selected' : '' %>>Iconic Cities</option>
+        <option value="Hill Stations" <%= (filters && filters.category === 'Hill Stations') ? 'selected' : '' %>>Hill Stations</option>
+        <option value="Luxury Castles" <%= (filters && filters.category === 'Luxury Castles') ? 'selected' : '' %>>Luxury Castles</option>
+        <option value="Amazing Pools" <%= (filters && filters.category === 'Amazing Pools') ? 'selected' : '' %>>Amazing Pools</option>
+        <option value="Farms" <%= (filters && filters.category === 'Farms') ? 'selected' : '' %>>Farms</option>
+        <option value="Campsites" <%= (filters && filters.category === 'Campsites') ? 'selected' : '' %>>Campsites</option>
+        <option value="Arctic" <%= (filters && filters.category === 'Arctic') ? 'selected' : '' %>>Arctic</option>
+        <option value="Beaches" <%= (filters && filters.category === 'Beaches') ? 'selected' : '' %>>Beaches</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label class="filter-label">Price:</label>
+      <select class="filter-select" id="priceFilter">
+        <option value="">Any Price</option>
+        <option value="0-2000" <%= (filters && filters.price === '0-2000') ? 'selected' : '' %>>₹0 - ₹2K</option>
+        <option value="2000-5000" <%= (filters && filters.price === '2000-5000') ? 'selected' : '' %>>₹2K - ₹5K</option>
+        <option value="5000-10000" <%= (filters && filters.price === '5000-10000') ? 'selected' : '' %>>₹5K - ₹10K</option>
+        <option value="10000+" <%= (filters && filters.price === '10000+') ? 'selected' : '' %>>₹10K+</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Results Section -->
+<div class="results-container">
+  <% if (results && results.length > 0) { %>
+    <div class="row row-cols-lg-3 row-cols-md-2 row-cols-1 g-4">
+      <% for (let listing of results) { %>
+        <div class="col">
+          <div class="listing-card">
+            <a href="/listings/<%= listing._id %>" class="text-decoration-none">
+              <img src="<%= listing.image.url %>" class="listing-image w-100" alt="<%= listing.title %>">
+              <div class="listing-body">
+                <h5 class="listing-title">
+                  <% if (searchQuery) { %>
+                    <%- listing.title.replace(new RegExp(searchQuery, 'gi'), '<span class="highlight">$&</span>') %>
+                  <% } else { %>
+                    <%= listing.title %>
+                  <% } %>
+                </h5>
+                <div class="listing-location">
+                  <i class="fa-solid fa-location-dot"></i>
+                  <%= listing.location || 'Location not specified' %>
+                </div>
+                <div class="d-flex align-items-baseline">
+                  <span class="listing-price">₹<%= listing.price ? listing.price.toLocaleString("en-IN") : "N/A" %></span>
+                  <span class="price-label ms-1">/ night</span>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  <% } else { %>
+    <!-- Compact No Results -->
+    <div class="no-results">
+      <div class="no-results-icon">
+        <i class="fa-solid fa-search"></i>
+      </div>
+      <h2 class="no-results-title">No results found</h2>
+      <p class="no-results-text">
+        <% if (searchQuery) { %>
+          No properties match "<strong><%= searchQuery %></strong>". Try different terms or browse categories below.
+        <% } else { %>
+          No properties available. Check back later.
+        <% } %>
+      </p>
+      
+      <div class="suggestions">
+        <a href="/listings/search?q=beach" class="suggestion-tag">Beach</a>
+        <a href="/listings/search?q=mountain" class="suggestion-tag">Mountain</a>
+        <a href="/listings/search?q=city" class="suggestion-tag">City</a>
+        <a href="/listings/search?q=luxury" class="suggestion-tag">Luxury</a>
+        <a href="/listings" class="suggestion-tag">Browse All</a>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  initializeFilters();
+});
+
+function initializeFilters() {
+  const sortFilter = document.getElementById('sortFilter');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const priceFilter = document.getElementById('priceFilter');
+  
+  [sortFilter, categoryFilter, priceFilter].forEach(filter => {
+    if (filter) {
+      filter.addEventListener('change', function() {
+        applyFilters();
+      });
+    }
+  });
+}
+
+function applyFilters() {
+  const sort = document.getElementById('sortFilter')?.value || '';
+  const category = document.getElementById('categoryFilter')?.value || '';
+  const price = document.getElementById('priceFilter')?.value || '';
+  const query = '<%= searchQuery || "" %>';
+  
+  const params = new URLSearchParams();
+  if (query) params.set('q', query);
+  if (sort && sort !== 'relevance') params.set('sort', sort);
+  if (category) params.set('category', category);
+  if (price) params.set('price', price);
+  
+  window.location.href = `/listings/search?${params.toString()}`;
+}
+</script>
