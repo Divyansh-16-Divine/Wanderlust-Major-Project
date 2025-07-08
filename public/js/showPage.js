@@ -66,31 +66,6 @@ document.addEventListener("DOMContentLoaded", function () {
       element.style.animationDelay = `${index * 0.1}s`;
     });
   }, 100);
-
-  // Prevent scroll jumping
-  document.body.style.overflowX = "hidden";
-  document.documentElement.style.overflowX = "hidden";
-});
-
-// Handle window resize to prevent layout issues
-window.addEventListener("resize", function () {
-  clearTimeout(window.resizeTimer);
-  window.resizeTimer = setTimeout(function () {
-    // Force reflow to fix any layout issues
-    document.body.style.display = "none";
-    document.body.offsetHeight; // Trigger reflow
-    document.body.style.display = "";
-  }, 150);
-});
-
-// Remove any lingering focus states when clicking anywhere on the page
-document.addEventListener("click", function (event) {
-  // Only blur if we're not clicking on an interactive element
-  if (!event.target.matches("input, textarea, select, button, a, [tabindex]")) {
-    if (document.activeElement && document.activeElement !== document.body) {
-      document.activeElement.blur();
-    }
-  }
 });
 
 // MAP SCROLL FIX - SOLUTION 1: Simple Click-to-activate (RECOMMENDED)
