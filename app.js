@@ -1,4 +1,4 @@
-if (process.env.NODE_ENV != "production") {
+if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
@@ -20,85 +20,103 @@ const listingsRouter = require("./routes/listings.js");
 const reviewsRouter = require("./routes/reviews.js");
 const usersRouter = require("./routes/users.js");
 
-const dbUrl = process.env.ATLAS_DB_URL; //Take care and remember to configure the IP Address on the Atlas
+const atlasUrl = process.env.ATLAS_DB_URL;
+const localUrl = "mongodb://127.0.0.1:27017/wanderlust";
+const port = process.env.PORT || 8080;
 
-main()
-  .then(() => {
-    console.log("connected to DB");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+let dbUrl = localUrl; // Will be changed to Atlas if connection succeeds
 
-async function main() {
-  await mongoose.connect(dbUrl);
+async function connectToDatabase() {
+  try {
+    console.log("Trying to connect to MongoDB Atlas...");
+    await mongoose.connect(atlasUrl);
+    dbUrl = atlasUrl;
+    console.log("✅ Connected to MongoDB Atlas");
+  } catch (err) {
+    console.error("❌ Failed to connect to Atlas:", err.message);
+    console.log("➡️ Falling back to local MongoDB...");
+    try {
+      await mongoose.connect(localUrl);
+      console.log("✅ Connected to local MongoDB");
+    } catch (localErr) {
+      console.error("❌ Failed to connect to local MongoDB as well.");
+      process.exit(1);
+    }
+  }
 }
 
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.urlencoded({ extended: true }));
-app.use(methodOverride("_method"));
-app.engine("ejs", ejsMate);
-app.use(express.static(path.join(__dirname, "/public")));
+startApp();
 
-const store = MongoStore.create({
-  mongoUrl: dbUrl,
-  crypto: {
+async function startApp() {
+  await connectToDatabase();
+  console.log("📦 Final DB URL used for sessions:", dbUrl);
+
+  app.set("view engine", "ejs");
+  app.set("views", path.join(__dirname, "views"));
+  app.use(express.urlencoded({ extended: true }));
+  app.use(methodOverride("_method"));
+  app.engine("ejs", ejsMate);
+  app.use(express.static(path.join(__dirname, "/public")));
+
+  const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    crypto: {
+      secret: process.env.SECRET,
+    },
+    touchAfter: 24 * 3600,
+  });
+
+  store.on("error", () => {
+    console.log("ERROR in MONGO SESSION STORE");
+  });
+
+  const sessionOptions = {
+    store,
     secret: process.env.SECRET,
-  },
-  touchAfter: 24 * 3600,
-});
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+    },
+  };
 
-store.on("error", () => {
-  console.log("ERROR in MONGO SESSION STORE", err);
-});
+  app.use(session(sessionOptions));
+  app.use(flash());
 
-const sessionOptions = {
-  store,
-  secret: process.env.SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-  },
-};
+  app.use(passport.initialize());
+  app.use(passport.session());
+  passport.use(new LocalStrategy(User.authenticate()));
+  passport.serializeUser(User.serializeUser());
+  passport.deserializeUser(User.deserializeUser());
 
-app.use(session(sessionOptions));
-app.use(flash());
+  app.use((req, res, next) => {
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    res.locals.currentUser = req.user;
+    next();
+  });
 
-app.use(passport.initialize());
-app.use(passport.session());
-passport.use(new LocalStrategy(User.authenticate()));
+  app.use("/listings", (req, res, next) => {
+    console.log(`Listings route hit: ${req.method} ${req.path}`);
+    next();
+  });
+  app.use("/listings", listingsRouter);
+  app.use("/listings/:id/reviews", reviewsRouter);
+  app.use("/", usersRouter);
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+  app.use((req, res, next) => {
+    next(new ExpressError(404, "Page Not Found!"));
+  });
 
-app.use((req, res, next) => {
-  res.locals.success = req.flash("success");
-  res.locals.error = req.flash("error");
-  res.locals.currentUser = req.user;
-  next();
-});
-// Add this in app.js before your routes for debugging
-app.use("/listings", (req, res, next) => {
-  console.log(`Listings route hit: ${req.method} ${req.path}`);
-  next();
-});
-app.use("/listings", listingsRouter);
-app.use("/listings/:id/reviews", reviewsRouter);
-app.use("/", usersRouter);
+  app.use((err, req, res, next) => {
+    const { statusCode = 500 } = err;
+    const message = err.message || "Something Went Wrong!";
+    res.status(statusCode).render("error.ejs", { err: { ...err, message } });
+  });
 
-app.use((req, res, next) => {
-  next(new ExpressError(404, "Page Not Found!"));
-});
-
-app.use((err, req, res, next) => {
-  let { statusCode = 500, message = "Something Went Wrong!" } = err;
-  res.status(statusCode).render("error.ejs", { err });
-});
-
-app.listen(8080, () => {
-  console.log("server is listening to port 8080");
-});
+  app.listen(port, () => {
+    console.log(`✅ Server is listening on port ${port}`);
+  });
+}
