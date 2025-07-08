@@ -98,6 +98,11 @@ async function startApp() {
     next();
   });
 
+  // ✅ Redirect base route to /listings
+  app.get("/", (req, res) => {
+    res.redirect("/listings");
+  });
+
   app.use("/listings", (req, res, next) => {
     console.log(`🛬 Listings route hit: ${req.method} ${req.path}`);
     next();
@@ -123,7 +128,7 @@ async function startApp() {
     console.log(`✅ Server is listening on port ${port}`);
   });
 
-  // 🧠 Add these to catch 502 root causes like unhandled promise errors:
+  // 💡 Helpful logs for debugging 502s and crashes
   process.on("uncaughtException", (err) => {
     console.error("❗ Uncaught Exception:", err);
   });
@@ -132,7 +137,6 @@ async function startApp() {
     console.error("❗ Unhandled Rejection at:", promise, "reason:", reason);
   });
 
-  // Optional: protect against slow connections triggering gateway timeout
   server.keepAliveTimeout = 120 * 1000;
   server.headersTimeout = 130 * 1000;
 }
