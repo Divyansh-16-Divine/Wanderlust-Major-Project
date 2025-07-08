@@ -24,22 +24,22 @@ const atlasUrl = process.env.ATLAS_DB_URL;
 const localUrl = "mongodb://127.0.0.1:27017/wanderlust";
 const port = process.env.PORT || 8080;
 
-let dbUrl = localUrl; // Will be changed to Atlas if connection succeeds
+let dbUrl = localUrl;
 
 async function connectToDatabase() {
   try {
-    console.log("Trying to connect to MongoDB Atlas...");
+    console.log("🔌 Trying to connect to MongoDB Atlas...");
     await mongoose.connect(atlasUrl);
     dbUrl = atlasUrl;
     console.log("✅ Connected to MongoDB Atlas");
   } catch (err) {
-    console.error("❌ Failed to connect to Atlas:", err.message);
-    console.log("➡️ Falling back to local MongoDB...");
+    console.error("❌ Atlas connection failed:", err.message);
+    console.log("➡️ Trying local MongoDB...");
     try {
       await mongoose.connect(localUrl);
       console.log("✅ Connected to local MongoDB");
     } catch (localErr) {
-      console.error("❌ Failed to connect to local MongoDB as well.");
+      console.error("❌ Local MongoDB failed:", localErr.message);
       process.exit(1);
     }
   }
@@ -49,7 +49,7 @@ startApp();
 
 async function startApp() {
   await connectToDatabase();
-  console.log("📦 Final DB URL used for sessions:", dbUrl);
+  console.log("📦 DB URL used for session store:", dbUrl);
 
   app.set("view engine", "ejs");
   app.set("views", path.join(__dirname, "views"));
@@ -61,18 +61,18 @@ async function startApp() {
   const store = MongoStore.create({
     mongoUrl: dbUrl,
     crypto: {
-      secret: process.env.SECRET,
+      secret: process.env.SECRET || "devsecret",
     },
     touchAfter: 24 * 3600,
   });
 
-  store.on("error", () => {
-    console.log("ERROR in MONGO SESSION STORE");
+  store.on("error", (err) => {
+    console.error("❗ Session store error:", err);
   });
 
   const sessionOptions = {
     store,
-    secret: process.env.SECRET,
+    secret: process.env.SECRET || "devsecret",
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -99,9 +99,10 @@ async function startApp() {
   });
 
   app.use("/listings", (req, res, next) => {
-    console.log(`Listings route hit: ${req.method} ${req.path}`);
+    console.log(`🛬 Listings route hit: ${req.method} ${req.path}`);
     next();
   });
+
   app.use("/listings", listingsRouter);
   app.use("/listings/:id/reviews", reviewsRouter);
   app.use("/", usersRouter);
@@ -113,10 +114,25 @@ async function startApp() {
   app.use((err, req, res, next) => {
     const { statusCode = 500 } = err;
     const message = err.message || "Something Went Wrong!";
+    console.error("❌ Express Error:", message);
+    console.error(err.stack || err);
     res.status(statusCode).render("error.ejs", { err: { ...err, message } });
   });
 
-  app.listen(port, () => {
+  const server = app.listen(port, "0.0.0.0", () => {
     console.log(`✅ Server is listening on port ${port}`);
   });
+
+  // 🧠 Add these to catch 502 root causes like unhandled promise errors:
+  process.on("uncaughtException", (err) => {
+    console.error("❗ Uncaught Exception:", err);
+  });
+
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("❗ Unhandled Rejection at:", promise, "reason:", reason);
+  });
+
+  // Optional: protect against slow connections triggering gateway timeout
+  server.keepAliveTimeout = 120 * 1000;
+  server.headersTimeout = 130 * 1000;
 }
