@@ -31,6 +31,9 @@ console.log("🚀 Starting app with environment:");
 console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
 console.log(`   PORT: ${process.env.PORT}`);
 console.log(`   ATLAS_DB_URL exists: ${!!process.env.ATLAS_DB_URL}`);
+console.log(`   Process ID: ${process.pid}`);
+console.log(`   Node Version: ${process.version}`);
+console.log(`   Memory Usage:`, process.memoryUsage());
 
 mongoose.set("strictQuery", true); // Remove deprecation warnings
 
@@ -40,11 +43,13 @@ async function connectToDatabase() {
 
   try {
     await mongoose.connect(atlasUrl, {
-      maxPoolSize: 10,
+      maxPoolSize: 5, // Reduced from 10 to save memory
+      minPoolSize: 1, // Add minimum pool size
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       heartbeatFrequencyMS: 10000,
       retryWrites: true,
+      maxIdleTimeMS: 10000, // Close idle connections after 10 seconds
     });
     dbUrl = atlasUrl;
     console.log("✅ Connected to MongoDB Atlas");
@@ -84,12 +89,28 @@ async function connectToDatabase() {
 mongoose.connection.on("connected", () => {
   console.log("✅ Mongoose connected to MongoDB");
 });
+
 mongoose.connection.on("error", (err) => {
   console.error("❌ Mongoose connection error:", err);
+  // Don't exit on connection errors in production
+  if (process.env.NODE_ENV === "production") {
+    console.log("🔄 Will attempt to reconnect...");
+  }
 });
+
 mongoose.connection.on("disconnected", () => {
   console.log("❌ Mongoose disconnected");
+  // Try to reconnect in production
+  if (process.env.NODE_ENV === "production") {
+    console.log("🔄 Attempting to reconnect in 5 seconds...");
+    setTimeout(() => {
+      connectToDatabase().catch((err) => {
+        console.error("❌ Reconnection failed:", err);
+      });
+    }, 5000);
+  }
 });
+
 mongoose.connection.on("reconnected", () => {
   console.log("✅ Mongoose reconnected");
 });
@@ -356,14 +377,25 @@ async function startApp() {
 
   process.on("uncaughtException", (err) => {
     console.error("❗ Uncaught Exception:", err);
-    // Exit directly for uncaught exceptions
-    process.exit(1);
+    // Log the error but try to continue in production
+    if (process.env.NODE_ENV === "production") {
+      console.error("🔄 Attempting to recover from uncaught exception...");
+      // Give the app a chance to recover
+      setTimeout(() => {
+        console.error("❌ Unable to recover, exiting...");
+        process.exit(1);
+      }, 5000);
+    } else {
+      process.exit(1);
+    }
   });
 
   process.on("unhandledRejection", (reason, promise) => {
     console.error("❗ Unhandled Rejection at:", promise, "reason:", reason);
-    // Exit directly for unhandled rejections
-    process.exit(1);
+    // In production, log but don't exit immediately
+    if (process.env.NODE_ENV !== "production") {
+      process.exit(1);
+    }
   });
 }
 
