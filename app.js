@@ -26,6 +26,12 @@ const port = process.env.PORT || 8080;
 
 let dbUrl = atlasUrl;
 
+// Add this right after your requires at the top
+console.log("🚀 Starting app with environment:");
+console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`   PORT: ${process.env.PORT}`);
+console.log(`   ATLAS_DB_URL exists: ${!!process.env.ATLAS_DB_URL}`);
+
 mongoose.set("strictQuery", true); // Remove deprecation warnings
 
 // ---------- MongoDB Connection ----------
@@ -89,26 +95,50 @@ mongoose.connection.on("reconnected", () => {
 });
 
 // ---------- Graceful Shutdown ----------
-function gracefulShutdown(signal) {
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) {
+    console.log("⚠️  Shutdown already in progress...");
+    return;
+  }
+
+  isShuttingDown = true;
   console.log(`🛑 ${signal} received, shutting down gracefully...`);
-  if (server) {
-    server.close(() => {
-      console.log("✅ HTTP server closed");
-      mongoose.connection.close(false, () => {
-        console.log("✅ MongoDB connection closed");
-        process.exit(0);
+
+  try {
+    // Close server first
+    if (server) {
+      await new Promise((resolve, reject) => {
+        server.close((err) => {
+          if (err) {
+            console.error("❌ Error closing server:", err);
+            reject(err);
+          } else {
+            console.log("✅ HTTP server closed");
+            resolve();
+          }
+        });
       });
-    });
-  } else {
-    mongoose.connection.close(false, () => {
+    }
+
+    // Then close database connection
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
       console.log("✅ MongoDB connection closed");
-      process.exit(0);
-    });
+    }
+
+    console.log("👋 Graceful shutdown completed");
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Error during graceful shutdown:", err);
+    process.exit(1);
   }
 }
 
-process.on("SIGINT", gracefulShutdown);
-process.on("SIGTERM", gracefulShutdown);
+// Handle different termination signals
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 
 let server;
 
@@ -136,21 +166,40 @@ async function startApp() {
     console.error("❗ Session store error:", err);
   });
 
+  // Add trust proxy setting for Render (IMPORTANT!)
+  app.set("trust proxy", 1); // Trust first proxy (Render's load balancer)
+
   const sessionOptions = {
     store,
     secret: process.env.SECRET || "devsecret",
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // Changed from true to false for better security
     cookie: {
       expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // Only secure in production
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Add sameSite
     },
+    name: "sessionId", // Custom session name (optional but recommended)
   };
+
+  // Add debugging for sessions in development
+  if (process.env.NODE_ENV !== "production") {
+    sessionOptions.cookie.secure = false; // Ensure cookies work in development
+  }
 
   app.use(session(sessionOptions));
   app.use(flash());
+
+  // Add session debugging middleware (temporary - remove after fixing)
+  app.use((req, res, next) => {
+    console.log(`📊 Session Debug - ${req.method} ${req.path}:`);
+    console.log(`   Session ID: ${req.sessionID}`);
+    console.log(`   User: ${req.user ? req.user.username : "Not logged in"}`);
+    console.log(`   Cookie Secure: ${sessionOptions.cookie.secure}`);
+    next();
+  });
 
   // ---------- Passport Setup ----------
   app.use(passport.initialize());
@@ -168,12 +217,16 @@ async function startApp() {
 
   // ---------- Routes ----------
   app.get("/health", async (req, res) => {
+    console.log("🏥 Health check requested"); // Add this debug line
+
     try {
       // Basic service health
       const healthStatus = {
         status: "OK",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
+        port: port, // Add port info
+        env: process.env.NODE_ENV,
         checks: {
           server: "healthy",
           database: "checking...",
@@ -182,9 +235,12 @@ async function startApp() {
 
       // Check MongoDB connection state first
       const dbState = mongoose.connection.readyState;
+      console.log(`   Database state: ${dbState}`); // Add debug
+
       if (dbState !== 1) {
         healthStatus.checks.database = "disconnected";
         healthStatus.status = "UNHEALTHY";
+        console.log("   ❌ Database not connected, returning 503");
         return res.status(503).json(healthStatus);
       }
 
@@ -202,6 +258,7 @@ async function startApp() {
           rss: `${Math.round(memUsage.rss / 1024 / 1024)} MB`,
         };
 
+        console.log("   ✅ Health check passed, returning 200");
         return res.status(200).json(healthStatus);
       } catch (dbError) {
         console.error("❌ Health check database ping failed:", dbError.message);
@@ -240,24 +297,45 @@ async function startApp() {
     console.error(`❌ 404 Page Not Found: ${fullUrl}`);
     console.error(`   Method: ${req.method}`);
     console.error(`   IP: ${req.ip}`);
+    // Only pass generic message to user, URL is only in console
     next(new ExpressError(404, "Page Not Found!"));
   });
 
   // ---------- General Error Handler ----------
   app.use((err, req, res, next) => {
-    const { statusCode = 500 } = err;
-    const message = err.message || "Something Went Wrong!";
+    let { statusCode = 500 } = err;
+    let message = err.message || "Something Went Wrong!";
     const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
 
-    console.error(`❌ Express Error [${statusCode}]: ${message}`);
+    // Convert MongoDB/Mongoose errors to user-friendly messages
+    if (err.name === "CastError" && err.kind === "ObjectId") {
+      // Invalid ObjectId - treat as 404
+      statusCode = 404;
+      message = "Page Not Found!";
+    } else if (err.name === "ValidationError") {
+      // Mongoose validation error
+      statusCode = 400;
+      message = "Invalid Request";
+    } else if (err.code === 11000) {
+      // MongoDB duplicate key error
+      statusCode = 400;
+      message = "Duplicate Entry";
+    }
+
+    // All detailed logging only goes to console, not to user
+    console.error(
+      `❌ Express Error [${statusCode}]: ${err.message || message}`
+    );
     console.error(`   URL: ${fullUrl}`);
     console.error(`   Method: ${req.method}`);
     console.error(`   IP: ${req.ip}`);
+    console.error(`   Error Type: ${err.name}`);
     if (req.body && Object.keys(req.body).length > 0) {
       console.error(`   Body:`, req.body);
     }
     console.error(err.stack || err);
 
+    // In production, only show generic message to user
     const errorResponse =
       process.env.NODE_ENV === "production"
         ? { message: statusCode === 500 ? "Internal Server Error" : message }
@@ -268,7 +346,8 @@ async function startApp() {
 
   // ---------- Start Server ----------
   server = app.listen(port, "0.0.0.0", () => {
-    console.log(`✅ Server is listening on port ${port}`);
+    console.log(`✅ Server is listening on 0.0.0.0:${port}`);
+    console.log(`📍 Health check endpoint: http://localhost:${port}/health`);
   });
 
   server.keepAliveTimeout = 120 * 1000;
@@ -277,12 +356,14 @@ async function startApp() {
 
   process.on("uncaughtException", (err) => {
     console.error("❗ Uncaught Exception:", err);
-    gracefulShutdown("UNCAUGHT_EXCEPTION");
+    // Exit directly for uncaught exceptions
+    process.exit(1);
   });
 
   process.on("unhandledRejection", (reason, promise) => {
     console.error("❗ Unhandled Rejection at:", promise, "reason:", reason);
-    gracefulShutdown("UNHANDLED_REJECTION");
+    // Exit directly for unhandled rejections
+    process.exit(1);
   });
 }
 
