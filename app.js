@@ -167,13 +167,57 @@ async function startApp() {
   });
 
   // ---------- Routes ----------
-  app.get("/health", (req, res) => {
-    res.status(200).json({
-      status: "OK",
-      timestamp: new Date().toISOString(),
-      dbStatus:
-        mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    });
+  app.get("/health", async (req, res) => {
+    try {
+      // Basic service health
+      const healthStatus = {
+        status: "OK",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        checks: {
+          server: "healthy",
+          database: "checking...",
+        },
+      };
+
+      // Check MongoDB connection state first
+      const dbState = mongoose.connection.readyState;
+      if (dbState !== 1) {
+        healthStatus.checks.database = "disconnected";
+        healthStatus.status = "UNHEALTHY";
+        return res.status(503).json(healthStatus);
+      }
+
+      // Perform actual database operation to verify connectivity
+      try {
+        // Use admin command to ping the database
+        await mongoose.connection.db.admin().ping();
+        healthStatus.checks.database = "connected";
+
+        // Optional: Add memory usage info
+        const memUsage = process.memoryUsage();
+        healthStatus.memory = {
+          heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)} MB`,
+          heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)} MB`,
+          rss: `${Math.round(memUsage.rss / 1024 / 1024)} MB`,
+        };
+
+        return res.status(200).json(healthStatus);
+      } catch (dbError) {
+        console.error("❌ Health check database ping failed:", dbError.message);
+        healthStatus.checks.database = "error";
+        healthStatus.status = "UNHEALTHY";
+        healthStatus.error = dbError.message;
+        return res.status(503).json(healthStatus);
+      }
+    } catch (error) {
+      console.error("❌ Health check failed:", error);
+      return res.status(503).json({
+        status: "ERROR",
+        timestamp: new Date().toISOString(),
+        error: error.message,
+      });
+    }
   });
 
   app.get("/", (req, res) => {
@@ -192,6 +236,10 @@ async function startApp() {
 
   // ---------- 404 Handler ----------
   app.use((req, res, next) => {
+    const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    console.error(`❌ 404 Page Not Found: ${fullUrl}`);
+    console.error(`   Method: ${req.method}`);
+    console.error(`   IP: ${req.ip}`);
     next(new ExpressError(404, "Page Not Found!"));
   });
 
@@ -199,7 +247,15 @@ async function startApp() {
   app.use((err, req, res, next) => {
     const { statusCode = 500 } = err;
     const message = err.message || "Something Went Wrong!";
-    console.error("❌ Express Error:", message);
+    const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+
+    console.error(`❌ Express Error [${statusCode}]: ${message}`);
+    console.error(`   URL: ${fullUrl}`);
+    console.error(`   Method: ${req.method}`);
+    console.error(`   IP: ${req.ip}`);
+    if (req.body && Object.keys(req.body).length > 0) {
+      console.error(`   Body:`, req.body);
+    }
     console.error(err.stack || err);
 
     const errorResponse =
