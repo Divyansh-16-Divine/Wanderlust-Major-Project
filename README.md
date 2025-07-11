@@ -102,7 +102,7 @@ Deployed using **Render.com** with MongoDB Atlas and Cloudinary.
 ## 🙋‍♂️ Author
 
 **Divyansh**
-🔗 [GitHub](https://github.com/Divyansh-16-Divine)
+💼 GitHub: [@Divyansh-16-Divine]((https://github.com/Divyansh-16-Divine))
 
 ---
 
