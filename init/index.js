@@ -35,7 +35,7 @@ const initDB = async () => {
 
   const listingsWithOwner = initData.data.map((obj) => ({
     ...obj,
-    owner: "686504dc4c15360a2524d79f", // replace with a valid ObjectId if needed
+    owner: "6a0f5183f44cbf5740b101e2", // Existing MongoDB Atlas user _id used as owner for seeded listings
   }));
 
   await Listing.insertMany(listingsWithOwner);
